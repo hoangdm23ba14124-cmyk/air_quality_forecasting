@@ -1,332 +1,126 @@
+"""NumPy Ridge: mean squared error + alpha * sum(w**2), unpenalized bias.
+
+Closed form is used in experiments for reproducible convergence. Mini-batch
+GD remains available for teaching and is checked against the same objective.
+For sklearn's sum-of-squares convention, alpha_sklearn = n * alpha_here.
 """
-src/models/ridge_regression.py
-================================
-Ridge Regression — Implemented from Scratch via Mini-Batch Gradient Descent
-
-Mathematical Formulation
-------------------------
-
-Objective (L2-Regularised MSE):
-    L(w, b) = (1/2n) · ‖Xw + b·1 − y‖² + (λ/2) · ‖w‖²
-
-where:
-    X ∈ ℝ^{n×p}  — feature matrix
-    w ∈ ℝ^p      — weight vector  (regularised)
-    b ∈ ℝ        — bias / intercept (NOT regularised)
-    y ∈ ℝ^n      — target vector
-    λ ≥ 0        — regularisation strength
-
-Gradient:
-    ∂L/∂w = (1/n) · Xᵀ(Xw + b − y) + λ·w
-    ∂L/∂b = (1/n) · Σᵢ (ŷᵢ − yᵢ)
-
-Note on bias exclusion from penalty:
-    The bias term b captures the global mean of y.  Including it in ‖w‖²
-    would pull the intercept toward zero, introducing systematic bias
-    (bias-in-the-statistical-sense) unrelated to regularisation.
-    This matches the convention in sklearn.linear_model.Ridge(fit_intercept=True).
-
-Update rule (mini-batch SGD):
-    w ← w − η · ∂L/∂w
-    b ← b − η · ∂L/∂b
-
-Early Stopping:
-    Track val_loss each epoch.  If val_loss has not improved by ≥ tol for
-    `patience` consecutive epochs, halt and restore best weights.
-    This acts as an implicit regulariser in the iteration-count dimension.
-
-Vectorisation note:
-    All matrix operations use NumPy broadcasting — no Python loops over
-    samples.  Complexity per epoch: O(n·p) for the matrix-vector products.
-"""
-
-from __future__ import annotations
-
-import logging
 import pickle
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-
 import numpy as np
-
-logger = logging.getLogger(__name__)
 
 
 class RidgeRegression:
-    """
-    Mini-batch Gradient Descent Ridge Regression.
+    def __init__(self, alpha=1.0, learning_rate=0.01, max_epochs=2000,
+                 batch_size=512, patience=30, tol=1e-6, random_state=42):
+        if not np.isfinite(alpha) or alpha < 0:
+            raise ValueError('alpha must be finite and nonnegative')
+        if not np.isfinite(learning_rate) or learning_rate <= 0 or not np.isfinite(tol) or tol < 0:
+            raise ValueError('Invalid learning_rate or tol')
+        if any(type(v) is not int or v < 1 for v in [max_epochs, batch_size, patience]):
+            raise ValueError('Epochs, batch size and patience must be positive integers')
+        self.alpha, self.learning_rate = alpha, learning_rate
+        self.max_epochs, self.batch_size, self.patience = max_epochs, batch_size, patience
+        self.tol, self.random_state = tol, random_state
+        self.w_, self.b_ = None, 0.0
+        self.train_losses_, self.val_losses_, self.objectives_ = [], [], []
+        self.best_epoch_ = 0
 
-    Parameters
-    ----------
-    alpha         : float — L2 regularisation coefficient λ  (default 1.0)
-    learning_rate : float — step size η                      (default 0.01)
-    max_epochs    : int   — maximum number of full passes     (default 2000)
-    batch_size    : int   — mini-batch size                   (default 512)
-    patience      : int   — early-stopping patience          (default 30)
-    tol           : float — min relative improvement for ES  (default 1e-6)
-    random_state  : int   — RNG seed for reproducibility     (default 42)
-    """
+    @staticmethod
+    def _validate(X, y):
+        X, y = np.asarray(X, dtype=float), np.asarray(y, dtype=float)
+        if X.ndim != 2 or y.ndim != 1 or len(X) != len(y) or len(y) < 2 or X.shape[1] == 0:
+            raise ValueError('Expected nonempty X[n,p] and y[n] with at least two rows')
+        if not np.isfinite(X).all() or not np.isfinite(y).all():
+            raise ValueError('Training data must be finite')
+        return X, y
 
-    def __init__(
-        self,
-        alpha:         float = 1.0,
-        learning_rate: float = 0.01,
-        max_epochs:    int   = 2000,
-        batch_size:    int   = 512,
-        patience:      int   = 30,
-        tol:           float = 1e-6,
-        random_state:  int   = 42,
-    ) -> None:
-        self.alpha         = alpha
-        self.learning_rate = learning_rate
-        self.max_epochs    = max_epochs
-        self.batch_size    = batch_size
-        self.patience      = patience
-        self.tol           = tol
-        self.random_state  = random_state
-
-        # Learned parameters
-        self.w_: Optional[np.ndarray] = None   # shape (p,)
-        self.b_: float = 0.0
-
-        # Training history
-        self.train_losses_: List[float] = []
-        self.val_losses_:   List[float] = []
-        self.best_epoch_:   int = 0
-
-    # -----------------------------------------------------------------------
-    # Core computations
-    # -----------------------------------------------------------------------
-
-    def _predict_raw(self, X: np.ndarray) -> np.ndarray:
-        """
-        Compute ŷ = X·w + b.
-
-        Parameters
-        ----------
-        X : np.ndarray of shape (n, p)
-
-        Returns
-        -------
-        np.ndarray of shape (n,)
-        """
+    def _predict_raw(self, X):
         return X @ self.w_ + self.b_
 
-    def _mse_loss(self, residuals: np.ndarray) -> float:
-        """
-        MSE = (1/n) · ‖r‖²   (without regularisation, used for monitoring).
-
-        Parameters
-        ----------
-        residuals : ŷ − y  of shape (n,)
-
-        Returns
-        -------
-        float scalar
-        """
+    def _mse_loss(self, residuals):
         return float(np.mean(residuals ** 2))
 
-    def _ridge_loss(self, residuals: np.ndarray) -> float:
-        """
-        Full Ridge objective: (1/n)‖r‖² + λ‖w‖².
+    def _ridge_loss(self, residuals):
+        return self._mse_loss(residuals) + self.alpha * float(self.w_ @ self.w_)
 
-        Parameters
-        ----------
-        residuals : ŷ − y of shape (n,)
+    def _gradients(self, X, residuals):
+        return 2 * X.T @ residuals / len(residuals) + 2 * self.alpha * self.w_, 2 * residuals.mean()
 
-        Returns
-        -------
-        float scalar
-        """
-        return self._mse_loss(residuals) + self.alpha * float(np.dot(self.w_, self.w_))
-
-    # -----------------------------------------------------------------------
-    # Gradient computation (vectorised)
-    # -----------------------------------------------------------------------
-
-    def _gradients(
-        self, X: np.ndarray, residuals: np.ndarray
-    ) -> Tuple[np.ndarray, float]:
-        """
-        Compute ∂L/∂w and ∂L/∂b for a mini-batch.
-
-        ∂L/∂w = (2/n)·Xᵀr + 2λ·w
-        ∂L/∂b = (2/n)·Σr
-
-        Parameters
-        ----------
-        X         : mini-batch features   (n_batch, p)
-        residuals : ŷ − y for mini-batch  (n_batch,)
-
-        Returns
-        -------
-        (grad_w, grad_b) tuple
-        """
-        n = len(residuals)
-        grad_w = (2.0 / n) * (X.T @ residuals) + 2.0 * self.alpha * self.w_
-        grad_b = (2.0 / n) * residuals.sum()
-        return grad_w, grad_b
-
-    # -----------------------------------------------------------------------
-    # Training
-    # -----------------------------------------------------------------------
-
-    def fit(
-        self,
-        X_train: np.ndarray,
-        y_train: np.ndarray,
-        X_val:   np.ndarray,
-        y_val:   np.ndarray,
-    ) -> "RidgeRegression":
-        """
-        Fit model parameters via mini-batch gradient descent with early stopping.
-
-        Algorithm:
-            1. Initialise w ~ 𝒩(0, 0.01²), b = 0
-            2. For each epoch:
-               a. Shuffle training set
-               b. Iterate over mini-batches; update w and b
-               c. Evaluate Ridge loss on full train and val sets
-               d. Check early stopping criterion
-            3. Restore best weights at convergence
-
-        Parameters
-        ----------
-        X_train : (n_train, p) training features
-        y_train : (n_train,)  training targets
-        X_val   : (n_val, p)  validation features
-        y_val   : (n_val,)    validation targets
-
-        Returns
-        -------
-        self
-        """
-        rng = np.random.default_rng(self.random_state)
-        n, p = X_train.shape
-
-        # Xavier-style initialisation
-        self.w_ = rng.normal(0.0, 0.01, size=p)
-        self.b_ = 0.0
-
-        best_val_loss  = np.inf
-        best_w = self.w_.copy()
-        best_b = self.b_
-        no_improve = 0
-
-        logger.info(
-            "Training Ridge: n=%d  p=%d  α=%.4f  η=%.5f  max_epochs=%d",
-            n, p, self.alpha, self.learning_rate, self.max_epochs,
-        )
-
-        for epoch in range(self.max_epochs):
-            # ── Shuffle ────────────────────────────────────────────────────
-            idx = rng.permutation(n)
-            X_s, y_s = X_train[idx], y_train[idx]
-
-            # ── Mini-batch updates ─────────────────────────────────────────
-            for start in range(0, n, self.batch_size):
-                end  = min(start + self.batch_size, n)
-                X_b  = X_s[start:end]
-                y_b  = y_s[start:end]
-
-                y_hat_b   = self._predict_raw(X_b)
-                residuals = y_hat_b - y_b
-
-                grad_w, grad_b = self._gradients(X_b, residuals)
-
-                self.w_ -= self.learning_rate * grad_w
-                self.b_ -= self.learning_rate * grad_b
-
-            # ── Epoch-level evaluation ─────────────────────────────────────
-            train_loss = self._ridge_loss(self._predict_raw(X_train) - y_train)
-            val_loss   = self._mse_loss(self._predict_raw(X_val)   - y_val)
-
-            self.train_losses_.append(train_loss)
-            self.val_losses_.append(val_loss)
-
-            # ── Early Stopping ─────────────────────────────────────────────
-            if val_loss < best_val_loss - self.tol:
-                best_val_loss  = val_loss
-                best_w = self.w_.copy()
-                best_b = self.b_
-                self.best_epoch_ = epoch
-                no_improve = 0
-            else:
-                no_improve += 1
-
-            if no_improve >= self.patience:
-                logger.info(
-                    "Early stopping at epoch %d  (best_val_loss=%.6f  epoch=%d)",
-                    epoch, best_val_loss, self.best_epoch_,
-                )
-                break
-
-            if epoch % 100 == 0:
-                logger.debug(
-                    "Epoch %4d | train_loss=%.6f | val_loss=%.6f",
-                    epoch, train_loss, val_loss,
-                )
-
-        # ── Restore best weights ───────────────────────────────────────────
-        self.w_ = best_w
-        self.b_ = best_b
-        logger.info("Training complete. Best epoch: %d", self.best_epoch_)
+    def fit_closed_form(self, X, y):
+        X, y = self._validate(X, y)
+        self.train_losses_, self.val_losses_, self.objectives_ = [], [], []
+        self.best_epoch_ = 0
+        xm, ym = X.mean(axis=0), y.mean()
+        xc, yc = X - xm, y - ym
+        if self.alpha == 0:
+            self.w_ = np.linalg.lstsq(xc, yc, rcond=None)[0]
+        else:
+            self.w_ = np.linalg.solve(xc.T @ xc + len(y) * self.alpha * np.eye(X.shape[1]), xc.T @ yc)
+        self.b_ = float(ym - xm @ self.w_)
         return self
 
-    # -----------------------------------------------------------------------
-    # Inference
-    # -----------------------------------------------------------------------
+    def fit(self, X_train, y_train, X_val, y_val):
+        X_train, y_train = self._validate(X_train, y_train)
+        X_val, y_val = self._validate(X_val, y_val)
+        if X_train.shape[1] != X_val.shape[1]:
+            raise ValueError('Train/validation feature counts differ')
+        rng = np.random.default_rng(self.random_state)
+        n, p = X_train.shape
+        self.w_, self.b_ = rng.normal(0, .01, p), 0.0
+        self.train_losses_, self.val_losses_, self.objectives_ = [], [], []
+        self.best_epoch_ = 0
+        best_loss, no_improve = np.inf, 0
+        best_w, best_b = self.w_.copy(), self.b_
+        for epoch in range(self.max_epochs):
+            indices = rng.permutation(n)
+            for start in range(0, n, self.batch_size):
+                ix = indices[start:start + self.batch_size]
+                residuals = self._predict_raw(X_train[ix]) - y_train[ix]
+                gw, gb = self._gradients(X_train[ix], residuals)
+                self.w_ -= self.learning_rate * gw
+                self.b_ -= self.learning_rate * gb
+            train_res = self._predict_raw(X_train) - y_train
+            val_loss = self._mse_loss(self._predict_raw(X_val) - y_val)
+            if not np.isfinite(val_loss) or not np.isfinite(train_res).all():
+                raise FloatingPointError('Gradient descent diverged; reduce learning_rate')
+            self.train_losses_.append(self._mse_loss(train_res))
+            self.val_losses_.append(val_loss)
+            self.objectives_.append(self._ridge_loss(train_res))
+            if val_loss < best_loss - self.tol:
+                best_loss, best_w, best_b = val_loss, self.w_.copy(), self.b_
+                self.best_epoch_, no_improve = epoch, 0
+            else:
+                no_improve += 1
+            if no_improve >= self.patience:
+                break
+        self.w_, self.b_ = best_w, best_b
+        return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        """
-        Generate continuous predictions ŷ = Xw + b.
-
-        Parameters
-        ----------
-        X : np.ndarray of shape (n, p)
-
-        Returns
-        -------
-        np.ndarray of shape (n,)
-        """
+    def predict(self, X):
         if self.w_ is None:
-            raise RuntimeError("Model has not been fitted.  Call .fit() first.")
+            raise RuntimeError('Model has not been fitted')
+        X = np.asarray(X, dtype=float)
+        if X.ndim != 2 or X.shape[1] != len(self.w_) or not np.isfinite(X).all():
+            raise ValueError('Invalid prediction features')
         return self._predict_raw(X)
 
-    # -----------------------------------------------------------------------
-    # Serialisation
-    # -----------------------------------------------------------------------
-
-    def save(self, path: str | Path) -> None:
-        """Serialise model to pickle."""
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "wb") as f:
-            pickle.dump(self, f)
-        logger.info("Model saved → %s", path)
+    def save(self, path):
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'wb') as stream:
+            pickle.dump(self, stream)
 
     @classmethod
-    def load(cls, path: str | Path) -> "RidgeRegression":
-        """Deserialise model from pickle."""
-        with open(path, "rb") as f:
-            model = pickle.load(f)
-        logger.info("Model loaded ← %s", path)
-        return model
-
-    # -----------------------------------------------------------------------
-    # Diagnostics
-    # -----------------------------------------------------------------------
+    def load(cls, path):
+        """Load only artifacts you created/trust; pickle is executable."""
+        with open(path, 'rb') as stream:
+            return pickle.load(stream)
 
     @property
-    def feature_weights(self) -> np.ndarray:
-        """Return the fitted weight vector w_ (copy)."""
+    def feature_weights(self):
         if self.w_ is None:
-            raise RuntimeError("Model not fitted.")
+            raise RuntimeError('Model has not been fitted')
         return self.w_.copy()
 
-    def training_history(self) -> Dict[str, List[float]]:
-        """Return dict of train/val loss curves."""
-        return {
-            "train_loss": self.train_losses_,
-            "val_loss":   self.val_losses_,
-        }
+    def training_history(self):
+        return {'train_loss': self.train_losses_, 'val_loss': self.val_losses_,
+                'ridge_objective': self.objectives_}

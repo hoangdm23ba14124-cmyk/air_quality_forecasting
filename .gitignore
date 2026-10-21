@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Reproducible experiment outputs (each run is created separately)
+air_quality_forecasting/outputs/runs/
+.venv/

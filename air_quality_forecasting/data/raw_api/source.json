@@ -1,0 +1,38 @@
+{
+  "downloaded_at_utc": "2026-10-20T13:05:29.239568+00:00",
+  "source": "Open-Meteo historical weather and CAMS air quality",
+  "meteo_api": "https://archive-api.open-meteo.com/v1/archive",
+  "air_quality_api": "https://air-quality-api.open-meteo.com/v1/air-quality",
+  "local_imputation": false,
+  "timezone": "Asia/Ho_Chi_Minh",
+  "start_date": "2023-01-01",
+  "end_date": "2024-12-31",
+  "cities": {
+    "hanoi": {
+      "lat": 21.0285,
+      "lon": 105.8542,
+      "name": "Hà Nội"
+    },
+    "haiphong": {
+      "lat": 20.8449,
+      "lon": 106.6881,
+      "name": "Hải Phòng"
+    },
+    "danang": {
+      "lat": 16.0544,
+      "lon": 108.2022,
+      "name": "Đà Nẵng"
+    },
+    "hcmc": {
+      "lat": 10.8231,
+      "lon": 106.6297,
+      "name": "TP. Hồ Chí Minh"
+    }
+  },
+  "sha256": {
+    "hanoi_raw.csv": "66010e46466f6ac3f6809a1d1e95b508cb1d29aaebfe3a3ca2fe039a9b29125d",
+    "haiphong_raw.csv": "55416c81eb36dce5fd4461f4a8b438a2980b5cfd92001f4355345ea0ae8762bc",
+    "danang_raw.csv": "aa0765125dd17bbe1a5803b954ef7d4a5606ded899311a4dc8259429dd48e254",
+    "hcmc_raw.csv": "4bca5380a2864cf56a67ae6d28e99fe83b9a76952eeaa88db581c83b8057fe12"
+  }
+}
