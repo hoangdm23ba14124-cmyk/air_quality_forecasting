@@ -218,5 +218,13 @@ __marimo__/
 .streamlit/secrets.toml
 
 # Reproducible experiment outputs (each run is created separately)
-air_quality_forecasting/outputs/runs/
+air_quality_forecasting/outputs/runs/*
+!air_quality_forecasting/outputs/runs/current/
 .venv/
+
+.DS_Store
+
+# Word temporary lock files
+~$*
+# Preserve the published experiment log
+!air_quality_forecasting/outputs/runs/current/run.log

@@ -1,0 +1,185 @@
+{
+  "git_commit": "dc3ebc3fddf1e459741c378ed4e9aabae28a30d7",
+  "git_worktree_changes": "M .gitignore\n M README.md\n M air_quality_forecasting/config/config.yaml\n M air_quality_forecasting/main.py\n M air_quality_forecasting/requirements.txt\n D air_quality_forecasting/src/data/__pycache__/ingestion.cpython-310.pyc\n D air_quality_forecasting/src/data/__pycache__/preprocessing.cpython-310.pyc\n M air_quality_forecasting/src/data/ingestion.py\n M air_quality_forecasting/src/data/preprocessing.py\n D air_quality_forecasting/src/evaluation/__pycache__/metrics.cpython-310.pyc\n M air_quality_forecasting/src/evaluation/metrics.py\n D air_quality_forecasting/src/features/__pycache__/engineering.cpython-310.pyc\n M air_quality_forecasting/src/features/engineering.py\n D air_quality_forecasting/src/models/__pycache__/baseline.cpython-310.pyc\n D air_quality_forecasting/src/models/__pycache__/ridge_regression.cpython-310.pyc\n M air_quality_forecasting/src/models/baseline.py\n M air_quality_forecasting/src/models/ridge_regression.py\n D air_quality_forecasting/src/visualization/__pycache__/plots.cpython-310.pyc\n M air_quality_forecasting/src/visualization/plots.py\n?? air_quality_forecasting/data/raw_api/\n?? air_quality_forecasting/outputs/README.md\n?? air_quality_forecasting/predict.py\n?? air_quality_forecasting/src/models/experiment.py\n?? air_quality_forecasting/tests/",
+  "python": "3.10.11 (v3.10.11:7d4cc5aa85, Apr  4 2023, 19:05:19) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "versions": {
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.7.2",
+    "matplotlib": "3.10.8",
+    "PyYAML": "6.0.3"
+  },
+  "source_sha256": {
+    "main.py": "8de82bf961d5c232b7e2c854409cf7fa17c8396ea3f0b10c3e473e8ec6004e4c",
+    "predict.py": "97c982b6f0e3126f7dc9ad6675f83b17ab218b65c896c099d8a69dad329d32d0",
+    "src/data/ingestion.py": "06d16a1b9deadee91274e0f2b9f83ad406cc69db95510fcc3a666d43d4f935ef",
+    "src/data/preprocessing.py": "e3367ce6fd0bd65214cf43d1ec4a5fdab1cad2f6021aaa0b20b1901b629f18c8",
+    "src/evaluation/metrics.py": "f819f675899ccfaa4ef122e6935a61089f916e7506dc19fd05c74a1579cda787",
+    "src/features/engineering.py": "4ad1da136e6e2315eed8d28e3a08724e34677deab1c78ff3e6e821b7f5b120fa",
+    "src/models/baseline.py": "098a1f7b0f100a7cf7c4bd60e45f58aa5a7f47b0f04d9b372735a5d68856c384",
+    "src/models/experiment.py": "0229a59314666fccd23ca41c10407a7093662afac101533b46d49e403153d40c",
+    "src/models/ridge_regression.py": "fc1a5f9647b4064681d91f9a0a6fcbb1057854667b70023183ee528f249b2d4f",
+    "src/visualization/plots.py": "1a17876404e777f2b9e67ab9855f3a463d766719210d66f92111ca2db84cd575"
+  },
+  "raw_sha256": {
+    "/Users/hoangzxje/Downloads/Semester 1 material/AI and Machine Learning/air_quality_forecasting/air_quality_forecasting/data/raw_api/danang_raw.csv": "aa0765125dd17bbe1a5803b954ef7d4a5606ded899311a4dc8259429dd48e254",
+    "/Users/hoangzxje/Downloads/Semester 1 material/AI and Machine Learning/air_quality_forecasting/air_quality_forecasting/data/raw_api/haiphong_raw.csv": "55416c81eb36dce5fd4461f4a8b438a2980b5cfd92001f4355345ea0ae8762bc",
+    "/Users/hoangzxje/Downloads/Semester 1 material/AI and Machine Learning/air_quality_forecasting/air_quality_forecasting/data/raw_api/hanoi_raw.csv": "66010e46466f6ac3f6809a1d1e95b508cb1d29aaebfe3a3ca2fe039a9b29125d",
+    "/Users/hoangzxje/Downloads/Semester 1 material/AI and Machine Learning/air_quality_forecasting/air_quality_forecasting/data/raw_api/hcmc_raw.csv": "4bca5380a2864cf56a67ae6d28e99fe83b9a76952eeaa88db581c83b8057fe12"
+  },
+  "data_source": "api_snapshot_no_local_imputation",
+  "source_metadata": {
+    "downloaded_at_utc": "2026-10-20T13:05:29.239568+00:00",
+    "source": "Open-Meteo historical weather and CAMS air quality",
+    "meteo_api": "https://archive-api.open-meteo.com/v1/archive",
+    "air_quality_api": "https://air-quality-api.open-meteo.com/v1/air-quality",
+    "local_imputation": false,
+    "timezone": "Asia/Ho_Chi_Minh",
+    "start_date": "2023-01-01",
+    "end_date": "2024-12-31",
+    "cities": {
+      "hanoi": {
+        "lat": 21.0285,
+        "lon": 105.8542,
+        "name": "Hà Nội"
+      },
+      "haiphong": {
+        "lat": 20.8449,
+        "lon": 106.6881,
+        "name": "Hải Phòng"
+      },
+      "danang": {
+        "lat": 16.0544,
+        "lon": 108.2022,
+        "name": "Đà Nẵng"
+      },
+      "hcmc": {
+        "lat": 10.8231,
+        "lon": 106.6297,
+        "name": "TP. Hồ Chí Minh"
+      }
+    },
+    "sha256": {
+      "hanoi_raw.csv": "66010e46466f6ac3f6809a1d1e95b508cb1d29aaebfe3a3ca2fe039a9b29125d",
+      "haiphong_raw.csv": "55416c81eb36dce5fd4461f4a8b438a2980b5cfd92001f4355345ea0ae8762bc",
+      "danang_raw.csv": "aa0765125dd17bbe1a5803b954ef7d4a5606ded899311a4dc8259429dd48e254",
+      "hcmc_raw.csv": "4bca5380a2864cf56a67ae6d28e99fe83b9a76952eeaa88db581c83b8057fe12"
+    }
+  },
+  "created_at_utc": "2026-10-20T13:15:57.714253+00:00",
+  "raw_coverage": [
+    {
+      "city": "danang",
+      "first": "2023-01-01 00:00:00+07:00",
+      "last": "2024-12-31 23:00:00+07:00",
+      "hourly_rows": 17544,
+      "missing_pm25": 0,
+      "complete_features": 13008
+    },
+    {
+      "city": "haiphong",
+      "first": "2023-01-01 00:00:00+07:00",
+      "last": "2024-12-31 23:00:00+07:00",
+      "hourly_rows": 17544,
+      "missing_pm25": 0,
+      "complete_features": 13008
+    },
+    {
+      "city": "hanoi",
+      "first": "2023-01-01 00:00:00+07:00",
+      "last": "2024-12-31 23:00:00+07:00",
+      "hourly_rows": 17544,
+      "missing_pm25": 0,
+      "complete_features": 13008
+    },
+    {
+      "city": "hcmc",
+      "first": "2023-01-01 00:00:00+07:00",
+      "last": "2024-12-31 23:00:00+07:00",
+      "hourly_rows": 17544,
+      "missing_pm25": 0,
+      "complete_features": 13008
+    }
+  ],
+  "split": {
+    "validation_start": "2024-07-22 05:00:00+07:00",
+    "test_start": "2024-10-11 11:00:00+07:00",
+    "max_horizon_purge_hours": 6,
+    "eligible_rows": 52008,
+    "dropped_rows": 18168,
+    "development_rows": 44180,
+    "test_rows": 7804,
+    "test_origin_end": "2024-12-31 17:00:00+07:00",
+    "folds": [
+      {
+        "train_rows": 36380,
+        "val_rows": 2576,
+        "last_train_target": "2024-07-22 04:00:00+07:00",
+        "first_val_origin": "2024-07-22 05:00:00+07:00",
+        "last_val_target": "2024-08-18 06:00:00+07:00"
+      },
+      {
+        "train_rows": 38980,
+        "val_rows": 2576,
+        "last_train_target": "2024-08-18 06:00:00+07:00",
+        "first_val_origin": "2024-08-18 07:00:00+07:00",
+        "last_val_target": "2024-09-14 08:00:00+07:00"
+      },
+      {
+        "train_rows": 41580,
+        "val_rows": 2576,
+        "last_train_target": "2024-09-14 08:00:00+07:00",
+        "first_val_origin": "2024-09-14 09:00:00+07:00",
+        "last_val_target": "2024-10-11 10:00:00+07:00"
+      }
+    ]
+  },
+  "feature_names": [
+    "temperature_2m",
+    "relative_humidity_2m",
+    "dew_point_2m",
+    "surface_pressure",
+    "wind_speed_10m",
+    "precipitation",
+    "cloud_cover",
+    "boundary_layer_height",
+    "shortwave_radiation",
+    "pm25_current",
+    "sin_hour",
+    "cos_hour",
+    "sin_month",
+    "cos_month",
+    "sin_dow",
+    "cos_dow",
+    "is_weekend",
+    "heat_humidity",
+    "wind_u",
+    "wind_v",
+    "dewpoint_depression",
+    "pressure_delta",
+    "pm25_lag_1",
+    "pm25_lag_2",
+    "pm25_lag_3",
+    "pm25_lag_6",
+    "pm25_lag_12",
+    "pm25_lag_24",
+    "pm25_lag_48",
+    "pm25_lag_72",
+    "pm25_lag_168",
+    "pm25_roll_mean_3h",
+    "pm25_roll_std_3h",
+    "pm25_roll_mean_6h",
+    "pm25_roll_std_6h",
+    "pm25_roll_mean_12h",
+    "pm25_roll_std_12h",
+    "pm25_roll_mean_24h",
+    "pm25_roll_std_24h",
+    "city_danang",
+    "city_haiphong",
+    "city_hcmc"
+  ],
+  "forecast_contract": "Direct PM2.5(t+h) using observations available through origin t; origin hour assumed available",
+  "ridge_solver": "numpy_closed_form",
+  "ridge_objective": "mean_squared_error + alpha * squared_weight_norm",
+  "selection_metric": "pooled_validation_rmse"
+}

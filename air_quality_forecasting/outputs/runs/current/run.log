@@ -1,0 +1,9 @@
+2026-10-20 20:15:57,620 INFO Split: {'validation_start': '2024-07-22 05:00:00+07:00', 'test_start': '2024-10-11 11:00:00+07:00', 'max_horizon_purge_hours': 6, 'eligible_rows': 52008, 'dropped_rows': 18168, 'development_rows': 44180, 'test_rows': 7804, 'test_origin_end': '2024-12-31 17:00:00+07:00', 'folds': [{'train_rows': 36380, 'val_rows': 2576, 'last_train_target': '2024-07-22 04:00:00+07:00', 'first_val_origin': '2024-07-22 05:00:00+07:00', 'last_val_target': '2024-08-18 06:00:00+07:00'}, {'train_rows': 38980, 'val_rows': 2576, 'last_train_target': '2024-08-18 06:00:00+07:00', 'first_val_origin': '2024-08-18 07:00:00+07:00', 'last_val_target': '2024-09-14 08:00:00+07:00'}, {'train_rows': 41580, 'val_rows': 2576, 'last_train_target': '2024-09-14 08:00:00+07:00', 'first_val_origin': '2024-09-14 09:00:00+07:00', 'last_val_target': '2024-10-11 10:00:00+07:00'}]}
+2026-10-20 20:15:57,654 INFO Dropped 18168/70176 rows with incomplete features or future labels; details: missing_data.csv
+2026-10-20 20:15:57,714 INFO Selecting model configurations for +1h
+2026-10-20 20:15:58,474 INFO +1h validation winner: multiple_linear; parameters: {'persistence': None, 'simple_linear': None, 'multiple_linear': None, 'polynomial': 2, 'ridge': 0.0}
+2026-10-20 20:15:58,747 INFO Selecting model configurations for +3h
+2026-10-20 20:15:59,471 INFO +3h validation winner: multiple_linear; parameters: {'persistence': None, 'simple_linear': None, 'multiple_linear': None, 'polynomial': 2, 'ridge': 0.0}
+2026-10-20 20:15:59,738 INFO Selecting model configurations for +6h
+2026-10-20 20:16:00,467 INFO +6h validation winner: multiple_linear; parameters: {'persistence': None, 'simple_linear': None, 'multiple_linear': None, 'polynomial': 2, 'ridge': 0.0}
+2026-10-20 20:16:02,519 INFO Completed. Outputs: /Users/hoangzxje/Downloads/Semester 1 material/AI and Machine Learning/air_quality_forecasting/air_quality_forecasting/outputs/runs/current
