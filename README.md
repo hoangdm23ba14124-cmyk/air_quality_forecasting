@@ -36,6 +36,60 @@ Ba phương pháp dùng `LinearRegression` (OLS) của scikit-learn; Polynomial 
 Không scale target: đầu ra trực tiếp là µg/m³. Scaler của các features và phép mở
 rộng polynomial được fit trong từng fold train, sau đó áp dụng nguyên trạng vào validation.
 
+## Features của từng mô hình
+
+Với cấu hình hiện tại, các mô hình sử dụng đầu vào như sau. Số cột không bao gồm intercept.
+
+| Mô hình | Features đầu vào | Số cột đưa vào hồi quy |
+|---|---|---:|
+| Simple Linear Regression | Chỉ `pm25_current`, tức PM2.5 tại thời điểm t | 1 |
+| Multiple Linear Regression | Toàn bộ đặc trưng trong bảng bên dưới | 42 |
+| Polynomial Regression | Cùng 42 đặc trưng, mở rộng đa thức trên 4 biến được chọn | 52 khi bậc 2; 72 khi bậc 3 |
+
+### Bộ 42 features của Multiple Linear
+
+| Nhóm | Số lượng | Tên cột và ý nghĩa |
+|---|---:|---|
+| PM2.5 hiện tại | 1 | `pm25_current`: nồng độ tại giờ t |
+| Khí tượng | 9 | `temperature_2m` (nhiệt độ), `relative_humidity_2m` (độ ẩm tương đối), `dew_point_2m` (điểm sương), `surface_pressure` (áp suất), `wind_speed_10m` (tốc độ gió), `precipitation` (lượng mưa), `cloud_cover` (độ che phủ mây), `boundary_layer_height` (độ cao lớp biên khí quyển), `shortwave_radiation` (bức xạ sóng ngắn) |
+| Thời gian | 7 | `sin_hour`, `cos_hour`, `sin_month`, `cos_month`, `sin_dow`, `cos_dow`: mã hóa chu kỳ giờ, tháng và thứ trong tuần; `is_weekend`: chỉ báo cuối tuần |
+| Khí tượng suy dẫn | 5 | `heat_humidity`: nhiệt độ × độ ẩm; `wind_u`, `wind_v`: hai thành phần gió; `dewpoint_depression`: nhiệt độ trừ điểm sương; `pressure_delta`: áp suất giờ t trừ giờ trước, cùng thành phố |
+| PM2.5 trễ | 9 | `pm25_lag_{h}` với h = 1, 2, 3, 6, 12, 24, 48, 72, 168 giờ |
+| Thống kê trượt PM2.5 | 8 | `pm25_roll_mean_{w}h` và `pm25_roll_std_{w}h` với w = 3, 6, 12, 24 giờ |
+| Thành phố | 3 | `city_danang`, `city_haiphong`, `city_hcmc`; Hà Nội là nhóm tham chiếu, cả ba cột bằng 0 |
+
+Hướng gió `wind_direction_10m` được dùng để tạo `wind_u` và `wind_v`, không đưa
+trực tiếp vào hồi quy. Timestamp được chuyển thành các biến thời gian ở trên.
+Các cột PM10, NO₂ và ozone trong dữ liệu nguồn không thuộc bộ features của mô hình.
+
+### Mở rộng features cho Polynomial
+
+Bốn biến được mở rộng là `pm25_current`, `temperature_2m`,
+`relative_humidity_2m` và `wind_speed_10m`. Các biến còn lại giữ nguyên dạng tuyến tính.
+
+Với bậc 2, bốn biến tạo thành **14 cột**: 4 biến gốc, 4 bình phương và 6 tích tương tác
+đôi, chẳng hạn `pm25_current²` và `pm25_current × temperature_2m`.
+Cộng với 38 cột còn lại, mô hình nhận **52 cột**, không tính intercept.
+Bậc 3 tạo 34 cột đa thức, tức **72 cột** sau khi ghép với 38 cột còn lại.
+Trong bộ kết quả `outputs/runs/current`, validation chọn **bậc 2 tại cả ba mốc**.
+Hồi quy đa thức vẫn tuyến tính theo các hệ số, dù dùng biến đổi phi tuyến của đầu vào.
+
+### Quy tắc thời gian và chuẩn hóa
+
+Cả ba mốc +1, +3 và +6 giờ dùng cùng cách tạo features nhưng học mô hình riêng;
+nhãn lần lượt là PM2.5(t+1), PM2.5(t+3), PM2.5(t+6).
+Các cột nhãn không nằm trong danh sách features.
+
+Độ trễ và thống kê trượt được tính riêng theo thành phố, chỉ dùng dữ liệu đến t.
+Cửa sổ trượt bao gồm giờ t và yêu cầu đủ quan sát; không tự bỏ qua giờ thiếu.
+Cách dùng dữ liệu giờ t chỉ hợp lệ khi dữ liệu đó đã sẵn có tại lúc phát hành dự báo.
+`StandardScaler` được fit trên train của từng fold rồi áp dụng nguyên trạng lên validation;
+trước test, scaler được fit lại trên development. Không fit scaler trên test.
+
+Mã nguồn: [tạo features](air_quality_forecasting/src/features/engineering.py),
+[chọn đầu vào và fit mô hình](air_quality_forecasting/src/models/experiment.py),
+[cấu hình](air_quality_forecasting/config/config.yaml).
+
 ## Cài đặt và chạy
 
 Python 3.10+; chạy các lệnh sau từ thư mục ngoài cùng của repo:
