@@ -2,52 +2,40 @@
   "1": {
     "winner": "multiple_linear",
     "parameters": {
-      "persistence": null,
       "simple_linear": null,
       "multiple_linear": null,
-      "polynomial": 2,
-      "ridge": 0.0
+      "polynomial": 2
     },
     "validation_rmse": {
-      "persistence": 3.985921783448355,
       "simple_linear": 3.97193845277851,
       "multiple_linear": 3.3487948066418887,
-      "polynomial": 3.354071730875653,
-      "ridge": 3.3487948066418887
+      "polynomial": 3.354071730875653
     }
   },
   "3": {
     "winner": "multiple_linear",
     "parameters": {
-      "persistence": null,
       "simple_linear": null,
       "multiple_linear": null,
-      "polynomial": 2,
-      "ridge": 0.0
+      "polynomial": 2
     },
     "validation_rmse": {
-      "persistence": 9.259389155116006,
       "simple_linear": 9.077174311211833,
       "multiple_linear": 7.742785035966178,
-      "polynomial": 7.756935501007342,
-      "ridge": 7.742785035966178
+      "polynomial": 7.756935501007342
     }
   },
   "6": {
     "winner": "multiple_linear",
     "parameters": {
-      "persistence": null,
       "simple_linear": null,
       "multiple_linear": null,
-      "polynomial": 2,
-      "ridge": 0.0
+      "polynomial": 2
     },
     "validation_rmse": {
-      "persistence": 13.994072845064109,
       "simple_linear": 13.348396159125414,
       "multiple_linear": 11.144340840372289,
-      "polynomial": 11.221295091652792,
-      "ridge": 11.144340840372289
+      "polynomial": 11.221295091652792
     }
   }
 }

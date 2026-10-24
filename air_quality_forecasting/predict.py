@@ -44,7 +44,6 @@ def forecast(run_dir, history_dir, as_of=None):
             'city': rows.city.to_numpy(), 'forecast_origin': origin,
             'horizon_hours': h, 'target_time': origin + pd.Timedelta(hours=h),
             'model': family, 'predicted_pm25': predicted,
-            'above_experimental_threshold': predicted >= cfg['threshold']['pm25_bad'],
         }))
     return pd.concat(outputs, ignore_index=True)
 

@@ -1,8 +1,9 @@
 # Dự báo PM2.5 sau 1, 3 và 6 giờ
 
-So sánh **Simple Linear, Multiple Linear, Polynomial và Ridge Regression** trên
+So sánh **Simple Linear, Multiple Linear và Polynomial Regression** trên
 bốn thành phố: Hà Nội, Hải Phòng, Đà Nẵng, TP. Hồ Chí Minh. Mỗi phương pháp học
-một mô hình riêng cho từng horizon; persistence là mốc so sánh bắt buộc.
+một mô hình riêng cho từng horizon. Persistence chỉ là phép tính tham chiếu trong metrics,
+không được huấn luyện, lưu model hoặc đưa vào lựa chọn mô hình.
 
 ## Bài toán và thời điểm phát hành
 
@@ -25,20 +26,12 @@ hoặc bổ sung kiểm soát thời điểm dữ liệu được phát hành tr
 
 | Phương pháp | Đầu vào / cách fit |
 |---|---|
-| Persistence | PM2.5(t), không fit hệ số |
 | Simple Linear | Một biến PM2.5(t), có intercept |
 | Multiple Linear | Danh sách đặc trưng cố định, OLS |
 | Polynomial | Mở rộng 4 biến số trong config thành bậc 2 hoặc 3; giữ các biến còn lại tuyến tính |
-| Ridge | Cùng đặc trưng với Multiple Linear; phạt L2, không phạt intercept |
 
-OLS và biến đổi đa thức dùng scikit-learn. Ridge tự triển khai bằng NumPy:
-
-`L = mean((Xw + b - y)^2) + alpha * sum(w^2)`
-
-Thí nghiệm dùng nghiệm trực tiếp để không lẫn sai số hội tụ với tác dụng regularization.
-Gradient descent vẫn có trong `src/models/ridge_regression.py` để học và đối chiếu bằng test.
-Với quy ước tổng bình phương của sklearn Ridge, `alpha_sklearn = n_train * alpha_here`.
-`alpha=0` là hồi quy không phạt L2, không bị CLI bỏ qua.
+Ba phương pháp dùng `LinearRegression` (OLS) của scikit-learn; Polynomial mở rộng
+đặc trưng bằng `PolynomialFeatures` trước khi fit.
 
 Không scale target: đầu ra trực tiếp là µg/m³. Scaler của các features và phép mở
 rộng polynomial được fit trong từng fold train, sau đó áp dụng nguyên trạng vào validation.
@@ -71,7 +64,6 @@ python air_quality_forecasting/main.py --fetch
 
 Dữ liệu tải mới được lưu trong `run/raw/` kèm metadata và hash; snapshot mặc định không bị ghi đè. API phụ thuộc mạng,
 phạm vi dữ liệu và hạn mức nhà cung cấp. `--raw-dir` cho phép chọn cache khác.
-`--alpha 0` chỉ chạy ứng viên Ridge alpha=0; mặc định tìm trong lưới của config.
 
 ## Validation và test
 
@@ -80,18 +72,16 @@ phạm vi dữ liệu và hạn mức nhà cung cấp. `--raw-dir` cho phép ch�
 3. Sau khi lọc khoảng ngày local trong config, khoảng đầu 70% là train ban đầu; 15% tiếp theo chia thành 3 cửa sổ validation.
 4. Train mở rộng qua từng cửa sổ. Loại mẫu có nhãn +6h chạm/vượt đầu validation;
    nhãn validation cũng không vượt cuối cửa sổ. Đây là khoảng loại trừ chung cho cả ba horizon.
-5. Chọn bậc polynomial, alpha Ridge và phương pháp bằng RMSE gộp các cửa sổ validation.
+5. Chọn bậc polynomial và phương pháp bằng RMSE gộp các cửa sổ validation.
 6. Refit mỗi phương pháp với cấu hình đã chọn trên development (train + validation),
    vẫn loại nhãn chạm/vượt đầu test.
 7. Đánh giá một lần trên 15% cuối. Không chọn lại phương pháp bằng thứ hạng test.
 
 Các mô hình chia sẻ cùng dòng test. RMSE, MAE, R² và mức cải thiện so với persistence
 được xuất riêng theo horizon và theo thành phố. R² không xác định khi target không biến
-động; recall không xác định khi không có mẫu dương; các trường này được để trống trong CSV.
+động; trường này được để trống trong CSV.
 Mức cải thiện không xác định nếu baseline RMSE bằng 0.
 
-Ngưỡng 35.4 là **ngưỡng phân loại thực nghiệm trên nồng độ từng giờ**, không phải AQI
-hay kết luận về chuẩn sức khỏe EPA. Ngưỡng lấy từ config xuyên suốt bảng kết quả và biểu đồ.
 Dự đoán âm không bị âm thầm cắt về 0; số lượng được ghi trong metrics để đánh giá hạn chế
 của hồi quy tuyến tính. Hệ số tương quan không chứng minh quan hệ nhân quả.
 
@@ -102,9 +92,9 @@ của hồi quy tuyến tính. Hệ số tương quan không chứng minh quan h
 - `missing_data.csv`: số giờ thiếu từng biến/thành phố; không tự điền dữ liệu tương lai.
 - `validation_scores.csv`, `selection.json`: điểm từng cấu hình/fold và lựa chọn trước test.
 - `predictions.csv`: city, forecast_origin, horizon_hours, target_time, model, y_true, y_pred, y_baseline.
-- `metrics.csv`, `city_metrics.csv`: 15 hàng tổng thể và 60 hàng theo thành phố với cấu hình mặc định.
-- `models/`: 12 mô hình fit + 3 baseline, mỗi bộ chứa scaler, feature order, horizon, tham số;
-  kèm bảng hệ số của các mô hình fit.
+- `metrics.csv`, `city_metrics.csv`: 9 hàng tổng thể và 36 hàng theo thành phố với cấu hình mặc định.
+- `models/`: 9 mô hình fit, mỗi bộ chứa scaler, feature order, horizon, tham số;
+  khi chạy mới, chương trình cũng xuất bảng hệ số; các bảng phụ này đã được dọn khỏi bộ kết quả hiện tại.
 - `figures/`: so sánh RMSE; biểu đồ từng thành phố/horizon của phương pháp chọn bằng validation.
 
 ## Dự đoán khi chưa biết tương lai
@@ -130,7 +120,7 @@ PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v
 ```
 
 Kiểm tra giờ/nhãn, thành phố, missing hours, tính nhân quả của feature, purge ranh giới,
-scaler train-only, gradient và nghiệm Ridge, alpha=0, một lớp, lưu/nạp model và luồng
+scaler train-only, các chỉ số hồi quy, đúng ba họ mô hình, lưu/nạp model và luồng
 train → predict không cần đáp án tương lai.
 
 ## Giới hạn của dữ liệu hiện có
@@ -143,18 +133,19 @@ feature và ba nhãn. Tỷ lệ chia tập áp dụng lên các thời điểm �
 kết quả không đại diện cho các giờ thiếu dữ liệu. Không so trực tiếp RMSE giữa
 các run nếu khoảng test hoặc tập dòng khác nhau.
 
-Cache gốc vẫn giữ trong `data/raw/` để đối chiếu; chỉ dùng khi truyền `--raw-dir`.
-
 - Nguồn: [Open-Meteo Historical Weather](https://open-meteo.com/en/docs/historical-weather-api)
   và [Air Quality / CAMS](https://open-meteo.com/en/docs/air-quality-api).
   Dữ liệu mô hình/tái phân tích không tương đương số đo độc lập tại trạm.
-- Cache gốc 2023–2024 đã qua pipeline cũ, có thể đã được nội suy. Không có mặt nạ thiếu
-  ban đầu để khôi phục; việc sửa code không xóa được hạn chế của cache đó.
-- Cache gốc kết thúc lúc 00:00 ngày 31/12/2024, thiếu 23 giờ cuối. Code tải mới đã sửa
-  phạm vi ngày, nhưng không tự chế thêm dữ liệu cho cache.
 - Giả định dữ liệu cùng giờ sẵn có chưa được kiểm chứng với feed thực tế; cần kiểm tra
   độ trễ và đánh giá với dữ liệu trạm trước khi dùng làm hệ thống cảnh báo.
 - Các kết quả phiên bản cũ đã được dọn bỏ vì baseline và gán nhãn thành phố bị sai.
-  Bộ kết quả chạy lại nằm trong `air_quality_forecasting/outputs/runs/current/`.
+  Bộ kết quả của ba mô hình nằm trong `air_quality_forecasting/outputs/runs/current/`.
 
 Không đổi mô hình hay lưới tham số sau khi xem test chỉ để làm điểm test đẹp hơn.
+
+## Các file chính
+
+- `air_quality_forecasting/main.py`: xử lý dữ liệu, huấn luyện, so sánh và xuất kết quả.
+- `air_quality_forecasting/src/models/experiment.py`: ba mô hình hồi quy và lựa chọn bằng validation.
+- `air_quality_forecasting/predict.py`: dự đoán bằng mô hình đã lưu.
+- `reports/`: bảng và biểu đồ phục vụ bài làm về ba mô hình hồi quy.

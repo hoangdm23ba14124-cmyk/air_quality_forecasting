@@ -46,12 +46,6 @@ features:
 validation:
   n_splits: 3
 model:
-  ridge_alphas:
-  - 0.0
-  - 0.001
-  - 0.01
-  - 0.1
-  - 1.0
   polynomial_degrees:
   - 2
   - 3
@@ -60,8 +54,6 @@ model:
   - temperature_2m
   - relative_humidity_2m
   - wind_speed_10m
-threshold:
-  pm25_bad: 35.4
 paths:
   raw_data: data/raw_api
   runs: outputs/runs

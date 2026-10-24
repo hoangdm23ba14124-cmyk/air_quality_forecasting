@@ -1,7 +1,7 @@
-# Tài liệu dự án
+# Kết quả so sánh ba mô hình hồi quy
 
-- `Tong_hop_ket_qua_PM25.docx`: tổng hợp kết quả, đã kiểm tra bố cục 9 trang.
-- `PM25_Research_Report_EN.docx` và `PM25_Research_Report_VI.docx`: bản thảo báo cáo khoa học tiếng Anh và tiếng Việt; chưa hoàn tất kiểm tra bố cục, chưa phải bản sẵn sàng nộp.
-- `build_reports.py`: mã tạo hai bản thảo từ kết quả trong `outputs/runs/current`.
+- `Ket_qua_3_Regression_Hanoi_1h.docx` và `.pdf`: RMSE, MAE, R² của ba mô hình tại +1/+3/+6 giờ và biểu đồ Hà Nội +1 giờ.
+- `Regression_Results_1h_RMSE_R2_EN.png`: bảng tiếng Anh tại +1 giờ, chỉ RMSE và R².
 
-Các bảng và biểu đồ nguồn nằm trong `air_quality_forecasting/outputs/runs/current/`.
+Các bảng tổng hợp bốn thành phố trên cùng tập test. Dữ liệu nguồn nằm trong
+`air_quality_forecasting/outputs/runs/current/`. Các báo cáo mô tả phạm vi cũ đã được dọn bỏ.

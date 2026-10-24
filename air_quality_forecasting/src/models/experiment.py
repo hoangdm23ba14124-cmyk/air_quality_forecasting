@@ -5,10 +5,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 
 from src.features.engineering import feature_names
-from src.models.baseline import PersistenceBaseline
-from src.models.ridge_regression import RidgeRegression
 
-FAMILIES = ['persistence', 'simple_linear', 'multiple_linear', 'polynomial', 'ridge']
+FAMILIES = ['simple_linear', 'multiple_linear', 'polynomial']
 
 
 class ForecastModel:
@@ -17,7 +15,7 @@ class ForecastModel:
         if family not in FAMILIES:
             raise ValueError(f'Unknown model family: {family}')
         self.family, self.horizon, self.parameter = family, horizon, parameter
-        self.feature_names = ['pm25_current'] if family in ('persistence', 'simple_linear') else feature_names(cfg)
+        self.feature_names = ['pm25_current'] if family == 'simple_linear' else feature_names(cfg)
         self.poly_columns = cfg['model']['polynomial_features'] if family == 'polynomial' else []
         if len(set(self.poly_columns)) != len(self.poly_columns) or not set(self.poly_columns) <= set(self.feature_names):
             raise ValueError('Polynomial columns must be unique, allowed features')
@@ -37,14 +35,8 @@ class ForecastModel:
     def fit(self, frame):
         y = frame[f'target_{self.horizon}h'].to_numpy(dtype=float)
         self.training_end = frame.timestamp.max() + pd.Timedelta(hours=self.horizon)
-        if self.family == 'persistence':
-            self.estimator = PersistenceBaseline()
-            return self
         X = self.scaler.fit_transform(self._design(frame, fit=True))
-        if self.family == 'ridge':
-            self.estimator = RidgeRegression(alpha=float(self.parameter)).fit_closed_form(X, y)
-        else:
-            self.estimator = LinearRegression().fit(X, y)
+        self.estimator = LinearRegression().fit(X, y)
         return self
 
     def predict(self, frame):
@@ -53,17 +45,13 @@ class ForecastModel:
         X = frame[self.feature_names].to_numpy(dtype=float)
         if not np.isfinite(X).all():
             raise ValueError('Incomplete/non-finite history at forecast origin')
-        if self.family == 'persistence':
-            return self.estimator.predict(frame.pm25_current.to_numpy())
         return self.estimator.predict(self.scaler.transform(self._design(frame)))
 
     def coefficient_table(self):
-        if self.family == 'persistence':
-            return None
         names = self.feature_names
         if self.polynomial is not None:
             names = list(self.polynomial.get_feature_names_out(self.poly_columns)) + self.other_columns
-        w = self.estimator.w_ if self.family == 'ridge' else self.estimator.coef_
+        w = self.estimator.coef_
         return pd.DataFrame({'feature': names, 'coefficient_on_scaled_feature': w})
 
 
@@ -71,9 +59,7 @@ def select_models(folds, horizon, cfg):
     """Pooled validation RMSE, with preprocessing refit inside every fold."""
     records, choices, family_scores = [], {}, {}
     for family in FAMILIES:
-        if family == 'ridge':
-            candidates = cfg['model']['ridge_alphas']
-        elif family == 'polynomial':
+        if family == 'polynomial':
             candidates = cfg['model']['polynomial_degrees']
         else:
             candidates = [None]

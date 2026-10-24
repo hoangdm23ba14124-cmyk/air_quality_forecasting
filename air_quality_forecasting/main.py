@@ -10,7 +10,6 @@ import pickle
 import subprocess
 import sys
 
-import numpy as np
 import pandas as pd
 import yaml
 
@@ -34,16 +33,11 @@ def parse_args(argv=None):
     fetch.add_argument('--fetch', action='store_true', help='Download into the new run directory')
     fetch.add_argument('--skip-fetch', action='store_true', help='Use cached CSVs (default)')
     parser.add_argument('--run-dir', type=Path, help='New directory; existing paths are never overwritten')
-    parser.add_argument('--alpha', type=float, help='Use a single Ridge alpha, including 0')
     return parser.parse_args(argv)
 
 
 def run(args):
     cfg = load_config(args.config)
-    if args.alpha is not None:
-        if not np.isfinite(args.alpha) or args.alpha < 0:
-            raise ValueError('--alpha must be finite and nonnegative')
-        cfg['model']['ridge_alphas'] = [args.alpha]
     run_dir = (args.run_dir or ROOT / cfg['paths']['runs'] / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')).resolve()
     run_dir.mkdir(parents=True, exist_ok=False)
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s',
@@ -95,7 +89,6 @@ def run(args):
         'created_at_utc': datetime.now(timezone.utc).isoformat(),
         'raw_coverage': raw_stats, 'split': split, 'feature_names': feature_names(cfg),
         'forecast_contract': 'Direct PM2.5(t+h) using observations available through origin t; origin hour assumed available',
-        'ridge_solver': 'numpy_closed_form', 'ridge_objective': 'mean_squared_error + alpha * squared_weight_norm',
         'selection_metric': 'pooled_validation_rmse',
     }
     (run_dir / 'manifest.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding='utf-8')
@@ -125,14 +118,14 @@ def run(args):
             })
             predictions.append(rows)
     predictions = pd.concat(predictions, ignore_index=True)
-    metrics, city_metrics = summarize(predictions, cfg['threshold']['pm25_bad'])
+    metrics, city_metrics = summarize(predictions)
     predictions.to_csv(run_dir / 'predictions.csv', index=False)
     metrics.to_csv(run_dir / 'metrics.csv', index=False)
     city_metrics.to_csv(run_dir / 'city_metrics.csv', index=False)
     pd.DataFrame(cv_rows).to_csv(run_dir / 'validation_scores.csv', index=False)
     (run_dir / 'selection.json').write_text(json.dumps(selections, indent=2), encoding='utf-8')
     generate_all_figures(predictions, metrics, {h: v['winner'] for h, v in selections.items()},
-                         cfg['threshold']['pm25_bad'], run_dir / 'figures')
+                         run_dir / 'figures')
     logger.info('Completed. Outputs: %s', run_dir)
     print(metrics[['model', 'horizon_hours', 'rmse', 'mae', 'r2', 'improvement_pct']].to_string(index=False))
     return run_dir

@@ -1,6 +1,6 @@
 {
-  "git_commit": "dc3ebc3fddf1e459741c378ed4e9aabae28a30d7",
-  "git_worktree_changes": "M .gitignore\n M README.md\n M air_quality_forecasting/config/config.yaml\n M air_quality_forecasting/main.py\n M air_quality_forecasting/requirements.txt\n D air_quality_forecasting/src/data/__pycache__/ingestion.cpython-310.pyc\n D air_quality_forecasting/src/data/__pycache__/preprocessing.cpython-310.pyc\n M air_quality_forecasting/src/data/ingestion.py\n M air_quality_forecasting/src/data/preprocessing.py\n D air_quality_forecasting/src/evaluation/__pycache__/metrics.cpython-310.pyc\n M air_quality_forecasting/src/evaluation/metrics.py\n D air_quality_forecasting/src/features/__pycache__/engineering.cpython-310.pyc\n M air_quality_forecasting/src/features/engineering.py\n D air_quality_forecasting/src/models/__pycache__/baseline.cpython-310.pyc\n D air_quality_forecasting/src/models/__pycache__/ridge_regression.cpython-310.pyc\n M air_quality_forecasting/src/models/baseline.py\n M air_quality_forecasting/src/models/ridge_regression.py\n D air_quality_forecasting/src/visualization/__pycache__/plots.cpython-310.pyc\n M air_quality_forecasting/src/visualization/plots.py\n?? air_quality_forecasting/data/raw_api/\n?? air_quality_forecasting/outputs/README.md\n?? air_quality_forecasting/predict.py\n?? air_quality_forecasting/src/models/experiment.py\n?? air_quality_forecasting/tests/",
+  "git_commit": "cc9002ac3e52c448e15a85ff591e78c9a7eb5a15",
+  "git_worktree_changes": "M README.md\n M air_quality_forecasting/config/config.yaml\n D air_quality_forecasting/data/raw/danang_raw.csv\n D air_quality_forecasting/data/raw/haiphong_raw.csv\n D air_quality_forecasting/data/raw/hanoi_raw.csv\n D air_quality_forecasting/data/raw/hcmc_raw.csv\n M air_quality_forecasting/main.py\n M air_quality_forecasting/predict.py\n M air_quality_forecasting/src/data/ingestion.py\n M air_quality_forecasting/src/evaluation/metrics.py\n D air_quality_forecasting/src/models/baseline.py\n M air_quality_forecasting/src/models/experiment.py\n D air_quality_forecasting/src/models/ridge_regression.py\n M air_quality_forecasting/src/visualization/plots.py\n M air_quality_forecasting/tests/test_forecasting.py\n D reports/PM25_Research_Report_EN.docx\n D reports/PM25_Research_Report_VI.docx\n M reports/README.md\n D reports/Tong_hop_ket_qua_PM25.docx\n D reports/build_reports.py\n?? reports/Ket_qua_3_Regression_Hanoi_1h.docx\n?? reports/Ket_qua_3_Regression_Hanoi_1h.pdf\n?? reports/Regression_Results_1h_EN.png\n?? reports/Regression_Results_1h_RMSE_R2_EN.png",
   "python": "3.10.11 (v3.10.11:7d4cc5aa85, Apr  4 2023, 19:05:19) [Clang 13.0.0 (clang-1300.0.29.30)]",
   "versions": {
     "numpy": "2.2.6",
@@ -10,16 +10,14 @@
     "PyYAML": "6.0.3"
   },
   "source_sha256": {
-    "main.py": "8de82bf961d5c232b7e2c854409cf7fa17c8396ea3f0b10c3e473e8ec6004e4c",
-    "predict.py": "97c982b6f0e3126f7dc9ad6675f83b17ab218b65c896c099d8a69dad329d32d0",
-    "src/data/ingestion.py": "06d16a1b9deadee91274e0f2b9f83ad406cc69db95510fcc3a666d43d4f935ef",
+    "main.py": "5c5130451ed1f9b6a87a8b790713cf2f950a53090137869ec84985b7b6c876ae",
+    "predict.py": "d42ecfb568f1e31fe29cebe4c0b3ee884ba6a52ae4acf357d7148acad3555927",
+    "src/data/ingestion.py": "c943dc9563ab855dab1b00ba6ee5d9fa6d9ce730dd258adfca47e7b2d3040a14",
     "src/data/preprocessing.py": "e3367ce6fd0bd65214cf43d1ec4a5fdab1cad2f6021aaa0b20b1901b629f18c8",
-    "src/evaluation/metrics.py": "f819f675899ccfaa4ef122e6935a61089f916e7506dc19fd05c74a1579cda787",
+    "src/evaluation/metrics.py": "2bfd4a3a9204c8d6bbddbd32bf8c23acd385c0416a3f5b780e244793ef1a243c",
     "src/features/engineering.py": "4ad1da136e6e2315eed8d28e3a08724e34677deab1c78ff3e6e821b7f5b120fa",
-    "src/models/baseline.py": "098a1f7b0f100a7cf7c4bd60e45f58aa5a7f47b0f04d9b372735a5d68856c384",
-    "src/models/experiment.py": "0229a59314666fccd23ca41c10407a7093662afac101533b46d49e403153d40c",
-    "src/models/ridge_regression.py": "fc1a5f9647b4064681d91f9a0a6fcbb1057854667b70023183ee528f249b2d4f",
-    "src/visualization/plots.py": "1a17876404e777f2b9e67ab9855f3a463d766719210d66f92111ca2db84cd575"
+    "src/models/experiment.py": "c9b54d9cf9e0ab6cae007bb26e8297e33b0c09b48cb57db93d253a5cff5e08ff",
+    "src/visualization/plots.py": "ec766f5f7ed527e465c9e6a9709d2c66cab787a8301025b837a896a36269e8cd"
   },
   "raw_sha256": {
     "/Users/hoangzxje/Downloads/Semester 1 material/AI and Machine Learning/air_quality_forecasting/air_quality_forecasting/data/raw_api/danang_raw.csv": "aa0765125dd17bbe1a5803b954ef7d4a5606ded899311a4dc8259429dd48e254",
@@ -66,7 +64,7 @@
       "hcmc_raw.csv": "4bca5380a2864cf56a67ae6d28e99fe83b9a76952eeaa88db581c83b8057fe12"
     }
   },
-  "created_at_utc": "2026-10-20T13:15:57.714253+00:00",
+  "created_at_utc": "2026-10-24T01:56:25.164622+00:00",
   "raw_coverage": [
     {
       "city": "danang",
@@ -179,7 +177,5 @@
     "city_hcmc"
   ],
   "forecast_contract": "Direct PM2.5(t+h) using observations available through origin t; origin hour assumed available",
-  "ridge_solver": "numpy_closed_form",
-  "ridge_objective": "mean_squared_error + alpha * squared_weight_norm",
   "selection_metric": "pooled_validation_rmse"
 }

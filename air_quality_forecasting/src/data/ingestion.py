@@ -146,8 +146,6 @@ def validate_config(cfg):
     ]:
         if not values or len(set(values)) != len(values) or any(type(v) is not int or v < minimum for v in values):
             raise ValueError(f'Invalid {key}')
-    if not cfg['model']['ridge_alphas'] or any(not np.isfinite(a) or a < 0 for a in cfg['model']['ridge_alphas']):
-        raise ValueError('Ridge alpha must be finite and nonnegative')
     poly = cfg['model']['polynomial_features']
     if not poly or len(set(poly)) != len(poly):
         raise ValueError('Polynomial features must be a nonempty list without duplicates')
@@ -155,8 +153,6 @@ def validate_config(cfg):
         raise ValueError('n_splits must be a positive integer')
     if not cfg['cities'] or 'hanoi' not in cfg['cities']:
         raise ValueError('Configured cities must include reference city hanoi')
-    if not np.isfinite(cfg['threshold']['pm25_bad']) or cfg['threshold']['pm25_bad'] <= 0:
-        raise ValueError('Threshold must be finite and positive')
     if pd.Timestamp(cfg['data']['end_date']) < pd.Timestamp(cfg['data']['start_date']):
         raise ValueError('end_date precedes start_date')
     return cfg

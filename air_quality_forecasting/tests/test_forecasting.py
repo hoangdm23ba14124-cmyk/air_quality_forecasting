@@ -15,9 +15,7 @@ from src.data.ingestion import (_apply_time_backbone, _parse_hourly_response,
                                 write_cache_metadata, cache_metadata)
 from src.data.preprocessing import prepare_splits
 from src.features.engineering import METEO_FEATURES, add_targets, build_features, feature_names
-from src.models.baseline import PersistenceBaseline
-from src.models.experiment import ForecastModel, select_models
-from src.models.ridge_regression import RidgeRegression
+from src.models.experiment import FAMILIES, ForecastModel, select_models
 from src.evaluation.metrics import metric_row
 
 
@@ -26,7 +24,6 @@ def config():
     cfg['cities'] = {k: cfg['cities'][k] for k in ['hanoi', 'haiphong']}
     cfg['features'] = {'lag_hours': [1, 3, 6], 'rolling_windows': [3, 6]}
     cfg['validation']['n_splits'] = 2
-    cfg['model']['ridge_alphas'] = [0., .1]
     cfg['model']['polynomial_degrees'] = [2]
     return cfg
 
@@ -155,45 +152,11 @@ class DataTests(unittest.TestCase):
 
 
 class ModelTests(unittest.TestCase):
-    def test_persistence_has_no_target_input(self):
-        current = np.array([10., 100., 11., 105.])
-        np.testing.assert_array_equal(PersistenceBaseline().predict(current), current)
-
-    def test_gradient_and_closed_form(self):
-        rng = np.random.default_rng(12)
-        X = rng.normal(size=(100, 4))
-        y = X @ np.array([1., -2., 3., .4]) + 5
-        m = RidgeRegression(alpha=.2)
-        m.w_, m.b_ = rng.normal(size=4), .5
-        gw, gb = m._gradients(X, m.predict(X) - y)
-        numeric = []
-        for j in range(4):
-            old = m.w_[j]
-            m.w_[j] = old + 1e-6
-            plus = m._ridge_loss(m.predict(X) - y)
-            m.w_[j] = old - 1e-6
-            minus = m._ridge_loss(m.predict(X) - y)
-            m.w_[j] = old
-            numeric.append((plus - minus) / 2e-6)
-        np.testing.assert_allclose(gw, numeric, atol=1e-7)
-        self.assertAlmostEqual(gb, 2 * (m.predict(X) - y).mean())
-        exact = m.fit_closed_form(X, y)
-        gd = RidgeRegression(alpha=.2, learning_rate=.03, max_epochs=2500,
-                             batch_size=100, patience=50, tol=1e-12).fit(X, y, X, y)
-        np.testing.assert_allclose(gd.predict(X), exact.predict(X), atol=1e-5)
-
-    def test_zero_alpha_matches_ols_even_with_collinearity(self):
-        from sklearn.linear_model import LinearRegression
-        X = np.column_stack([np.arange(20), np.arange(20) * 2])
-        y = np.arange(20) * 3 + 10
-        m = RidgeRegression(alpha=0).fit_closed_form(X, y)
-        np.testing.assert_allclose(m.predict(X), LinearRegression().fit(X, y).predict(X), atol=1e-10)
-
     def test_scaler_fit_only_on_training_and_predict_needs_no_targets(self):
         cfg = config()
         f = add_targets(build_features(panel(), cfg), [1, 3, 6])
         dev, test, _, _ = prepare_splits(f, cfg)
-        model = ForecastModel('ridge', 6, cfg, .1).fit(dev)
+        model = ForecastModel('multiple_linear', 6, cfg).fit(dev)
         np.testing.assert_allclose(model.scaler.mean_, dev[model.feature_names].mean())
         prediction = model.predict(test.drop(columns=['target_1h', 'target_3h', 'target_6h']))
         self.assertEqual(len(prediction), len(test))
@@ -208,19 +171,20 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(scores, scores2)
         self.assertEqual(winner, winner2)
 
-    def test_single_class_and_threshold_and_zero_baseline(self):
-        df = pd.DataFrame({'y_true': [10., 20.], 'y_pred': [10., 20.], 'y_baseline': [10., 20.]})
-        normal = metric_row(df, 35.4)
-        self.assertEqual(normal['tn'], 2)
-        self.assertTrue(np.isnan(normal['recall_high']))
-        self.assertTrue(np.isnan(normal['improvement_pct']))
-        self.assertEqual(metric_row(df, 15)['tp'], 1)
+    def test_regression_metrics_and_degenerate_targets(self):
+        df = pd.DataFrame({'y_true': [1., 3.], 'y_pred': [2., 2.], 'y_baseline': [1., 3.]})
+        row = metric_row(df)
+        self.assertEqual(row['rmse'], 1.)
+        self.assertEqual(row['mae'], 1.)
+        self.assertEqual(row['r2'], 0.)
+        self.assertTrue(np.isnan(row['improvement_pct']))
+        df['y_true'] = 1.
+        self.assertTrue(np.isnan(metric_row(df)['r2']))
 
-    def test_bad_shapes_and_parameters_rejected(self):
-        with self.assertRaises(ValueError):
-            RidgeRegression(alpha=-1)
-        with self.assertRaises(ValueError):
-            RidgeRegression().fit_closed_form(np.ones((4, 2)), np.ones((4, 3)))
+    def test_only_assignment_models_are_available(self):
+        self.assertEqual(FAMILIES, ['simple_linear', 'multiple_linear', 'polynomial'])
+        with self.assertRaisesRegex(ValueError, 'Unknown model'):
+            ForecastModel('unsupported', 1, config())
 
 
 class EndToEndTests(unittest.TestCase):
@@ -235,12 +199,11 @@ class EndToEndTests(unittest.TestCase):
             cfg_path = root / 'config.yaml'
             cfg_path.write_text(yaml.safe_dump(config()))
             args = parse_args(['--config', str(cfg_path), '--raw-dir', str(raw_dir),
-                               '--run-dir', str(root / 'run'), '--alpha', '0'])
+                               '--run-dir', str(root / 'run')])
             run_dir = run(args)
-            used = load_config(run_dir / 'config_used.yaml')
-            self.assertEqual(used['model']['ridge_alphas'], [0.])
             metrics = pd.read_csv(run_dir / 'metrics.csv')
-            self.assertEqual(len(metrics), 15)
+            self.assertEqual(len(metrics), 9)
+            self.assertEqual(set(metrics.model), set(FAMILIES))
             self.assertEqual(metrics.groupby('horizon_hours')['n'].nunique().tolist(), [1, 1, 1])
             predictions = pd.read_csv(run_dir / 'predictions.csv')
             observed = raw.set_index(['timestamp', 'city']).pm2_5
@@ -250,7 +213,7 @@ class EndToEndTests(unittest.TestCase):
             self.assertEqual(len(latest), 6)
             self.assertEqual(set(latest.horizon_hours), {1, 3, 6})
             self.assertTrue((latest.target_time > raw.timestamp.max()).all())
-            self.assertEqual(len(list((run_dir / 'models').glob('*.pkl'))), 15)
+            self.assertEqual(len(list((run_dir / 'models').glob('*.pkl'))), 9)
             with self.assertRaises(FileExistsError):
                 run(args)
             with self.assertRaisesRegex(ValueError, 'training uses'):
